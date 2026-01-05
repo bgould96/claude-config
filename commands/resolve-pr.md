@@ -4,7 +4,9 @@ Use the gh cli to read existing PR comments. Resolve pending issues.
 
 If you choose not to apply a suggested fix, create a GitHub Issue to track the future work
 
-Leave a REPLY to each comment summarizing the fix. Include  "@gemini-code-assist verify fix" at the end to trigger a re-review of that issue.
+Leave a REPLY to each comment summarizing the fix. Include the following at the end of EVERY comment:
+
+"@[commenter_username] verify fix", where commenter_username is the username of the user who left the PR comment.
 
 Commit and push BEFORE leaving a comment.
 
