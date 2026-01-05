@@ -18,8 +18,10 @@ Some commands require use of the GitHub CLI. To set this up, create a fine grain
 
 ONLY give this PAT access to repos you want Claude Code to be able to read
 
-To update `.claude`,
-
+To update `.claude`, run the following in your project directory:
 ```
-git pull --recurse-submodules
+git submodule update --recursive --remote
+git add .claude
+git commit -m "Update claude-config submodule"
+git push
 ```
