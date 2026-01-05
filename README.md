@@ -7,3 +7,9 @@ git submodule add git@github.com:bgould96/claude-config.git .claude
 ```
 
 With this + a CLAUDE.md in the project repo itself, Claude Code can be trivially deployed anywhere.
+
+Required gh cli PAT permissions:
+
+Contents: R
+Issues: R/W
+Pull Requests: R/W
