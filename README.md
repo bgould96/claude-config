@@ -17,3 +17,9 @@ Some commands require use of the GitHub CLI. To set this up, create a fine grain
 - Pull Requests: R/W
 
 ONLY give this PAT access to repos you want Claude Code to be able to read
+
+To update `.claude`,
+
+```
+git pull --recurse-submodules
+```
