@@ -18,6 +18,11 @@ Some commands require use of the GitHub CLI. To set this up, create a fine grain
 
 ONLY give this PAT access to repos you want Claude Code to be able to read
 
+After cloning project repo to a new environment, run this to populate .claude:
+```
+git submodule update --recursive --remote --init
+```
+
 To update `.claude`, run the following in your project directory:
 ```
 git submodule update --recursive --remote
