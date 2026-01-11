@@ -8,8 +8,8 @@ ENV_FILE="$PROJECT_ROOT/.env"
 
 # Load .env if it exists
 if [ -f "$ENV_FILE" ]; then
-    # Export only GH_API_KEY, safely
-    export GH_TOKEN=$(grep -E '^GH_API_KEY=' "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+    # Export only GH_API_KEY, safely (tr -d '\r' handles Windows line endings)
+    export GH_TOKEN=$(grep -E '^GH_API_KEY=' "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
 fi
 
 # Validate token exists
