@@ -20,8 +20,8 @@ if [ -d /opt/claude-data ]; then
     if [ "$RUN_AS_ROOT" -eq 1 ]; then
         ln -sfn /opt/claude-data /root/.claude
     else
-        ln -sfn /opt/claude-data /home/agent/.claude
         chown -R "$HOST_UID:$HOST_GID" /opt/claude-data
+        gosu agent ln -sfn /opt/claude-data /home/agent/.claude
     fi
 fi
 
