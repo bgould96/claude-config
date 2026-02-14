@@ -35,15 +35,15 @@ for arg in "$@"; do
 done
 
 # --- Image caching (hash-based) ---
-hash_files() {
+short_sha256() {
     if command -v sha256sum &>/dev/null; then
-        cat "$SCRIPT_DIR/Dockerfile" "$SCRIPT_DIR/entrypoint.sh" | sha256sum | cut -c1-12
+        sha256sum | cut -c1-12
     else
-        cat "$SCRIPT_DIR/Dockerfile" "$SCRIPT_DIR/entrypoint.sh" | shasum -a 256 | cut -c1-12
+        shasum -a 256 | cut -c1-12
     fi
 }
 
-IMAGE_HASH=$(hash_files)
+IMAGE_HASH=$(cat "$SCRIPT_DIR/Dockerfile" "$SCRIPT_DIR/entrypoint.sh" | short_sha256)
 IMAGE_TAG="claude-code:${IMAGE_HASH}"
 
 if docker image inspect "$IMAGE_TAG" &>/dev/null; then
@@ -51,6 +51,52 @@ if docker image inspect "$IMAGE_TAG" &>/dev/null; then
 else
     echo "Building image ($IMAGE_TAG)..."
     docker build -t "$IMAGE_TAG" "$SCRIPT_DIR"
+fi
+
+# --- Project image layer (caches apt + pip deps) ---
+DEPS_FILES=()
+for f in "$PROJECT_DIR/agent.deps" "$PROJECT_DIR/requirements.txt"; do
+    [ -f "$f" ] && DEPS_FILES+=("$f")
+done
+
+if [ ${#DEPS_FILES[@]} -gt 0 ]; then
+    DEPS_HASH=$(cat "${DEPS_FILES[@]}" | short_sha256)
+    PROJECT_TAG="claude-code-project:${IMAGE_HASH}-${DEPS_HASH}"
+
+    if docker image inspect "$PROJECT_TAG" &>/dev/null; then
+        echo "Project image exists, skipping deps build ($PROJECT_TAG)"
+    else
+        echo "Building project image ($PROJECT_TAG)..."
+        TMPDIR_BUILD=$(mktemp -d)
+        trap 'rm -rf "$TMPDIR_BUILD"' EXIT
+
+        # Copy deps files into build context
+        DOCKERFILE_BODY="FROM $IMAGE_TAG"
+        for f in "${DEPS_FILES[@]}"; do
+            cp "$f" "$TMPDIR_BUILD/"
+        done
+
+        if [ -f "$PROJECT_DIR/agent.deps" ]; then
+            DOCKERFILE_BODY="${DOCKERFILE_BODY}
+COPY agent.deps .
+RUN apt-get update -qq && grep -v '^\s*#' agent.deps | grep -v '^\s*\$' | xargs -r apt-get install -y --no-install-recommends -qq && rm -rf /var/lib/apt/lists/*"
+        fi
+
+        if [ -f "$PROJECT_DIR/requirements.txt" ]; then
+            DOCKERFILE_BODY="${DOCKERFILE_BODY}
+COPY requirements.txt .
+RUN pip3 install -q -r requirements.txt"
+        fi
+
+        DOCKERFILE_BODY="${DOCKERFILE_BODY}
+RUN touch /opt/.deps-preinstalled"
+
+        printf '%s\n' "$DOCKERFILE_BODY" > "$TMPDIR_BUILD/Dockerfile"
+        docker build -t "$PROJECT_TAG" "$TMPDIR_BUILD"
+    fi
+    RUN_IMAGE="$PROJECT_TAG"
+else
+    RUN_IMAGE="$IMAGE_TAG"
 fi
 
 # --- TTY detection ---
@@ -65,6 +111,7 @@ CONTAINER_NAME="claude-${PROJECT_NAME}-$$"
 # --- Dep cache volumes ---
 PIP_CACHE_VOL="claude-pip-cache-${PROJECT_NAME}"
 NPM_CACHE_VOL="claude-npm-cache-${PROJECT_NAME}"
+CLAUDE_DATA_VOL="claude-data-${PROJECT_NAME}"
 
 # --- Optional port exposure ---
 PORT_FLAGS=()
@@ -90,6 +137,7 @@ exec docker run --rm \
     -v "$PROJECT_DIR:/workspace" \
     -v "${PIP_CACHE_VOL}:/root/.cache/pip" \
     -v "${NPM_CACHE_VOL}:/root/.npm" \
+    -v "${CLAUDE_DATA_VOL}:/opt/claude-data" \
     ${PORT_FLAGS[@]+"${PORT_FLAGS[@]}"} \
-    "$IMAGE_TAG" \
+    "$RUN_IMAGE" \
     ${ARGS[@]+"${ARGS[@]}"}

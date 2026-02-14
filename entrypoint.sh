@@ -15,8 +15,22 @@ else
     useradd -u "$HOST_UID" -g "$HOST_GID" -o -m -s /bin/bash agent 2>/dev/null || true
 fi
 
+# --- Claude data persistence ---
+if [ -d /opt/claude-data ]; then
+    if [ "$RUN_AS_ROOT" -eq 1 ]; then
+        ln -sfn /opt/claude-data /root/.claude
+    else
+        ln -sfn /opt/claude-data /home/agent/.claude
+        chown -R "$HOST_UID:$HOST_GID" /opt/claude-data
+    fi
+fi
+
+# --- Deps pre-installed check ---
+DEPS_PREINSTALLED=0
+[ -f /opt/.deps-preinstalled ] && DEPS_PREINSTALLED=1
+
 # --- Project-specific apt packages ---
-if [ -f /workspace/agent.deps ]; then
+if [ "$DEPS_PREINSTALLED" -eq 0 ] && [ -f /workspace/agent.deps ]; then
     mapfile -t DEPS < <(grep -v '^\s*#' /workspace/agent.deps | grep -v '^\s*$')
     if [ ${#DEPS[@]} -gt 0 ]; then
         echo "Installing apt packages from agent.deps: ${DEPS[*]}"
@@ -27,7 +41,7 @@ if [ -f /workspace/agent.deps ]; then
 fi
 
 # --- Python dependencies ---
-if [ -f /workspace/requirements.txt ]; then
+if [ "$DEPS_PREINSTALLED" -eq 0 ] && [ -f /workspace/requirements.txt ]; then
     echo "Installing Python dependencies..."
     pip3 install -q -r /workspace/requirements.txt
 fi
