@@ -86,6 +86,7 @@ exec docker run --rm \
     --cap-add=CHOWN \
     --cap-add=SETUID \
     --cap-add=SETGID \
+    --cap-add=DAC_OVERRIDE \
     -v "$PROJECT_DIR:/workspace" \
     -v "${PIP_CACHE_VOL}:/root/.cache/pip" \
     -v "${NPM_CACHE_VOL}:/root/.npm" \
