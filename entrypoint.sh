@@ -25,12 +25,8 @@ if [ -d /opt/claude-data ]; then
     fi
 fi
 
-# --- Deps pre-installed check ---
-DEPS_PREINSTALLED=0
-[ -f /opt/.deps-preinstalled ] && DEPS_PREINSTALLED=1
-
 # --- Project-specific apt packages ---
-if [ "$DEPS_PREINSTALLED" -eq 0 ] && [ -f /workspace/agent.deps ]; then
+if [ ! -f /opt/.deps-preinstalled ] && [ -f /workspace/agent.deps ]; then
     mapfile -t DEPS < <(grep -v '^\s*#' /workspace/agent.deps | grep -v '^\s*$')
     if [ ${#DEPS[@]} -gt 0 ]; then
         echo "Installing apt packages from agent.deps: ${DEPS[*]}"
@@ -41,7 +37,7 @@ if [ "$DEPS_PREINSTALLED" -eq 0 ] && [ -f /workspace/agent.deps ]; then
 fi
 
 # --- Python dependencies ---
-if [ "$DEPS_PREINSTALLED" -eq 0 ] && [ -f /workspace/requirements.txt ]; then
+if [ ! -f /opt/.deps-preinstalled ] && [ -f /workspace/requirements.txt ]; then
     echo "Installing Python dependencies..."
     pip3 install -q -r /workspace/requirements.txt
 fi
@@ -53,7 +49,7 @@ if [ -f /workspace/package.json ] && [ ! -d /workspace/node_modules ]; then
         npm install --prefix /workspace
     else
         chown -R "$HOST_UID:$HOST_GID" /root/.npm
-        gosu agent npm install --prefix /workspace
+        gosu agent env NPM_CONFIG_CACHE=/root/.npm npm install --prefix /workspace
     fi
 fi
 

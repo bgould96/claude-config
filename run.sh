@@ -79,7 +79,7 @@ if [ ${#DEPS_FILES[@]} -gt 0 ]; then
         if [ -f "$PROJECT_DIR/agent.deps" ]; then
             DOCKERFILE_BODY="${DOCKERFILE_BODY}
 COPY agent.deps .
-RUN apt-get update -qq && grep -v '^\s*#' agent.deps | grep -v '^\s*\$' | xargs -r apt-get install -y --no-install-recommends -qq && rm -rf /var/lib/apt/lists/*"
+RUN apt-get update -qq && grep -v '^\s*#' agent.deps | grep -v '^\s*\$' | xargs -r apt-get install -y --no-install-recommends -qq -- && rm -rf /var/lib/apt/lists/*"
         fi
 
         if [ -f "$PROJECT_DIR/requirements.txt" ]; then
@@ -133,7 +133,6 @@ exec docker run --rm \
     --cap-add=CHOWN \
     --cap-add=SETUID \
     --cap-add=SETGID \
-    --cap-add=DAC_OVERRIDE \
     -v "$PROJECT_DIR:/workspace" \
     -v "${PIP_CACHE_VOL}:/root/.cache/pip" \
     -v "${NPM_CACHE_VOL}:/root/.npm" \
