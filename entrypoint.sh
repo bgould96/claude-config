@@ -17,12 +17,11 @@ fi
 
 # --- Project-specific apt packages ---
 if [ -f /workspace/agent.deps ]; then
-    DEPS=$(grep -v '^\s*#' /workspace/agent.deps | grep -v '^\s*$' | tr '\n' ' ')
-    if [ -n "$DEPS" ]; then
-        echo "Installing apt packages from agent.deps: $DEPS"
+    mapfile -t DEPS < <(grep -v '^\s*#' /workspace/agent.deps | grep -v '^\s*$')
+    if [ ${#DEPS[@]} -gt 0 ]; then
+        echo "Installing apt packages from agent.deps: ${DEPS[*]}"
         apt-get update -qq
-        # shellcheck disable=SC2086
-        apt-get install -y --no-install-recommends -qq $DEPS
+        apt-get install -y --no-install-recommends -qq -- "${DEPS[@]}"
         rm -rf /var/lib/apt/lists/*
     fi
 fi
@@ -39,6 +38,7 @@ if [ -f /workspace/package.json ] && [ ! -d /workspace/node_modules ]; then
     if [ "$RUN_AS_ROOT" -eq 1 ]; then
         npm install --prefix /workspace
     else
+        chown -R "$HOST_UID:$HOST_GID" /root/.npm
         gosu agent npm install --prefix /workspace
     fi
 fi
