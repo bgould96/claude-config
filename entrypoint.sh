@@ -28,6 +28,7 @@ fi
 # --- Host credentials injection ---
 if [ -f /opt/claude-auth/.credentials.json ]; then
     cp /opt/claude-auth/.credentials.json /opt/claude-data/.credentials.json
+    chmod 600 /opt/claude-data/.credentials.json
     if [ "$RUN_AS_ROOT" -eq 0 ]; then
         chown "$HOST_UID:$HOST_GID" /opt/claude-data/.credentials.json
     fi
