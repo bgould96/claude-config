@@ -15,9 +15,6 @@ else
     useradd -u "$HOST_UID" -g "$HOST_GID" -o -m -s /bin/bash agent 2>/dev/null || true
 fi
 
-echo "DEBUG: HOST_UID=$HOST_UID HOST_GID=$HOST_GID RUN_AS_ROOT=$RUN_AS_ROOT"
-echo "DEBUG: /root perms: $(ls -ld /root)"
-
 # --- Claude data persistence ---
 if [ -d /opt/claude-data ]; then
     if [ "$RUN_AS_ROOT" -eq 1 ]; then
@@ -43,10 +40,10 @@ fi
 if [ ! -f /opt/.deps-preinstalled ] && [ -f /workspace/requirements.txt ]; then
     echo "Installing Python dependencies..."
     if [ "$RUN_AS_ROOT" -eq 1 ]; then
-        chown -R root:root /opt/pip-cache
+        chown -hR root:root /opt/pip-cache
         pip3 install -q -r /workspace/requirements.txt --cache-dir /opt/pip-cache
     else
-        chown -R "$HOST_UID:$HOST_GID" /opt/pip-cache
+        chown -hR "$HOST_UID:$HOST_GID" /opt/pip-cache
         gosu agent pip3 install -q -r /workspace/requirements.txt --cache-dir /opt/pip-cache
     fi
 fi
@@ -55,10 +52,10 @@ fi
 if [ -f /workspace/package.json ] && [ ! -d /workspace/node_modules ]; then
     echo "Installing Node dependencies..."
     if [ "$RUN_AS_ROOT" -eq 1 ]; then
-        chown -R root:root /opt/npm-cache
+        chown -hR root:root /opt/npm-cache
         npm install --prefix /workspace --cache /opt/npm-cache
     else
-        chown -R "$HOST_UID:$HOST_GID" /opt/npm-cache
+        chown -hR "$HOST_UID:$HOST_GID" /opt/npm-cache
         gosu agent npm install --prefix /workspace --cache /opt/npm-cache
     fi
 fi
