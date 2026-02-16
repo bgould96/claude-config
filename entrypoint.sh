@@ -46,6 +46,7 @@ fi
 if [ -f /workspace/package.json ] && [ ! -d /workspace/node_modules ]; then
     echo "Installing Node dependencies..."
     if [ "$RUN_AS_ROOT" -eq 1 ]; then
+        chown -R root:root /root/.npm
         npm install --prefix /workspace
     else
         chown -R "$HOST_UID:$HOST_GID" /root/.npm
