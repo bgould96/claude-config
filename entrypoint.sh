@@ -25,6 +25,14 @@ if [ -d /opt/claude-data ]; then
     fi
 fi
 
+# --- Host credentials injection ---
+if [ -f /opt/claude-auth/.credentials.json ]; then
+    cp /opt/claude-auth/.credentials.json /opt/claude-data/.credentials.json
+    if [ "$RUN_AS_ROOT" -eq 0 ]; then
+        chown "$HOST_UID:$HOST_GID" /opt/claude-data/.credentials.json
+    fi
+fi
+
 # --- Project-specific apt packages ---
 if [ ! -f /opt/.deps-preinstalled ] && [ -f /workspace/agent.deps ]; then
     mapfile -t DEPS < <(grep -v '^\s*#' /workspace/agent.deps | grep -v '^\s*$')

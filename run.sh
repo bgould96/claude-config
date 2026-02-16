@@ -120,6 +120,13 @@ if [ -n "$CONTAINER_PORT" ]; then
     PORT_FLAGS+=("-p" "${CONTAINER_PORT}:${CONTAINER_PORT}")
 fi
 
+# --- Host credentials (authenticate once, use everywhere) ---
+CLAUDE_CREDENTIALS="${CLAUDE_CREDENTIALS:-$HOME/.claude/.credentials.json}"
+CLAUDE_AUTH_FLAGS=()
+if [ -f "$CLAUDE_CREDENTIALS" ]; then
+    CLAUDE_AUTH_FLAGS+=("-v" "${CLAUDE_CREDENTIALS}:/opt/claude-auth/.credentials.json:ro")
+fi
+
 # --- Run ---
 # Use ${arr[@]+"${arr[@]}"} pattern for empty-array safety with set -u on bash < 4.4
 exec docker run --rm \
@@ -138,5 +145,6 @@ exec docker run --rm \
     -v "${NPM_CACHE_VOL}:/opt/npm-cache" \
     -v "${CLAUDE_DATA_VOL}:/opt/claude-data" \
     ${PORT_FLAGS[@]+"${PORT_FLAGS[@]}"} \
+    ${CLAUDE_AUTH_FLAGS[@]+"${CLAUDE_AUTH_FLAGS[@]}"} \
     "$RUN_IMAGE" \
     ${ARGS[@]+"${ARGS[@]}"}
