@@ -39,18 +39,24 @@ fi
 # --- Python dependencies ---
 if [ ! -f /opt/.deps-preinstalled ] && [ -f /workspace/requirements.txt ]; then
     echo "Installing Python dependencies..."
-    pip3 install -q -r /workspace/requirements.txt
+    if [ "$RUN_AS_ROOT" -eq 1 ]; then
+        chown -hR root:root /opt/pip-cache
+        pip3 install -q -r /workspace/requirements.txt --cache-dir /opt/pip-cache
+    else
+        chown -hR "$HOST_UID:$HOST_GID" /opt/pip-cache
+        gosu agent pip3 install -q -r /workspace/requirements.txt --cache-dir /opt/pip-cache
+    fi
 fi
 
 # --- Node dependencies ---
 if [ -f /workspace/package.json ] && [ ! -d /workspace/node_modules ]; then
     echo "Installing Node dependencies..."
     if [ "$RUN_AS_ROOT" -eq 1 ]; then
-        chown -R root:root /root/.npm
-        npm install --prefix /workspace
+        chown -hR root:root /opt/npm-cache
+        npm install --prefix /workspace --cache /opt/npm-cache
     else
-        chown -R "$HOST_UID:$HOST_GID" /root/.npm
-        gosu agent env NPM_CONFIG_CACHE=/root/.npm npm install --prefix /workspace
+        chown -hR "$HOST_UID:$HOST_GID" /opt/npm-cache
+        gosu agent npm install --prefix /workspace --cache /opt/npm-cache
     fi
 fi
 
