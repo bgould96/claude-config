@@ -12,10 +12,9 @@ if ! command -v docker &>/dev/null; then
     exit 1
 fi
 
-if [ ! -f "$PROJECT_DIR/.env" ]; then
-    echo "Error: .env file not found in $PROJECT_DIR" >&2
-    echo "Create one with at least ANTHROPIC_API_KEY=sk-ant-..." >&2
-    exit 1
+ENV_FLAGS=()
+if [ -f "$PROJECT_DIR/.env" ]; then
+    ENV_FLAGS+=("--env-file" "$PROJECT_DIR/.env")
 fi
 
 if [ ! -f "$SCRIPT_DIR/Dockerfile" ]; then
@@ -132,7 +131,7 @@ fi
 exec docker run --rm \
     ${DOCKER_FLAGS[@]+"${DOCKER_FLAGS[@]}"} \
     --name "$CONTAINER_NAME" \
-    --env-file "$PROJECT_DIR/.env" \
+    ${ENV_FLAGS[@]+"${ENV_FLAGS[@]}"} \
     -e "SKIP_PERMISSIONS=${SKIP_PERMISSIONS}" \
     --add-host=host.docker.internal:host-gateway \
     --security-opt=no-new-privileges \
