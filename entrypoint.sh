@@ -34,6 +34,48 @@ if [ -f /opt/claude-auth/.credentials.json ]; then
     fi
 fi
 
+# --- Host SSH keys injection (GitHub only) ---
+if [ -d /opt/ssh-keys ]; then
+    if [ "$RUN_AS_ROOT" -eq 1 ]; then
+        TARGET_SSH="/root/.ssh"
+    else
+        TARGET_SSH="/home/agent/.ssh"
+    fi
+
+    # Determine which key to copy: parse ssh config for github.com, else default to id_rsa
+    GH_KEY=""
+    if [ -f /opt/ssh-keys/config ]; then
+        GH_KEY=$(awk '
+            tolower($1) == "host" { matched = 0; for (i=2; i<=NF; i++) if ($i == "github.com") matched = 1 }
+            matched && tolower($1) == "identityfile" { gsub(/^~\/\.ssh\//, "", $2); print $2; exit }
+        ' /opt/ssh-keys/config)
+    fi
+    GH_KEY="${GH_KEY:-id_rsa}"
+
+    if [ -f "/opt/ssh-keys/$GH_KEY" ]; then
+        mkdir -p "$TARGET_SSH"
+
+        # Copy the private key (and .pub if it exists)
+        cp "/opt/ssh-keys/$GH_KEY" "$TARGET_SSH/$GH_KEY"
+        [ -f "/opt/ssh-keys/${GH_KEY}.pub" ] && cp "/opt/ssh-keys/${GH_KEY}.pub" "$TARGET_SSH/${GH_KEY}.pub"
+
+        # Copy config and known_hosts if present
+        [ -f /opt/ssh-keys/config ] && cp /opt/ssh-keys/config "$TARGET_SSH/config"
+        [ -f /opt/ssh-keys/known_hosts ] && cp /opt/ssh-keys/known_hosts "$TARGET_SSH/known_hosts"
+
+        # Fix permissions
+        chmod 700 "$TARGET_SSH"
+        chmod 600 "$TARGET_SSH/$GH_KEY"
+        [ -f "$TARGET_SSH/${GH_KEY}.pub" ] && chmod 644 "$TARGET_SSH/${GH_KEY}.pub"
+        [ -f "$TARGET_SSH/config" ] && chmod 644 "$TARGET_SSH/config"
+        [ -f "$TARGET_SSH/known_hosts" ] && chmod 644 "$TARGET_SSH/known_hosts"
+
+        if [ "$RUN_AS_ROOT" -eq 0 ]; then
+            chown -R "$HOST_UID:$HOST_GID" "$TARGET_SSH"
+        fi
+    fi
+fi
+
 # --- Project-specific apt packages ---
 if [ ! -f /opt/.deps-preinstalled ] && [ -f /workspace/agent.deps ]; then
     mapfile -t DEPS < <(grep -v '^\s*#' /workspace/agent.deps | grep -v '^\s*$')
