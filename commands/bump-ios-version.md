@@ -1,1 +1,1 @@
-Increment the minor version number of the MARKETING_VERSION in the pbxproj file for this app. Then, commit and push.
+Increment the patch version number (3rd number, e.g. 1.2.1 → 1.2.2) of the MARKETING_VERSION in the pbxproj file for this app, unless the user specifies a different version component (minor or major). Then, commit and push.
