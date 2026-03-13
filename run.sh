@@ -126,6 +126,13 @@ if [ -f "$CLAUDE_CREDENTIALS" ]; then
     CLAUDE_AUTH_FLAGS+=("-v" "${CLAUDE_CREDENTIALS}:/opt/claude-auth/.credentials.json:ro")
 fi
 
+# --- Host SSH keys (git push/pull over SSH) ---
+HOST_SSH_DIR="${HOST_SSH_DIR:-$HOME/.ssh}"
+SSH_AUTH_FLAGS=()
+if [ -d "$HOST_SSH_DIR" ]; then
+    SSH_AUTH_FLAGS+=("-v" "${HOST_SSH_DIR}:/opt/ssh-keys:ro")
+fi
+
 # --- Run ---
 # Use ${arr[@]+"${arr[@]}"} pattern for empty-array safety with set -u on bash < 4.4
 exec docker run --rm \
@@ -145,5 +152,6 @@ exec docker run --rm \
     -v "${CLAUDE_DATA_VOL}:/opt/claude-data" \
     ${PORT_FLAGS[@]+"${PORT_FLAGS[@]}"} \
     ${CLAUDE_AUTH_FLAGS[@]+"${CLAUDE_AUTH_FLAGS[@]}"} \
+    ${SSH_AUTH_FLAGS[@]+"${SSH_AUTH_FLAGS[@]}"} \
     "$RUN_IMAGE" \
     ${ARGS[@]+"${ARGS[@]}"}
